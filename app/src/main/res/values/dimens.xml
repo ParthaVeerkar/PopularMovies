@@ -1,0 +1,9 @@
+<resources>
+
+    <dimen name="activity_horizontal_margin">5dp</dimen>
+    <dimen name="activity_vertical_margin">5dp</dimen>
+    <dimen name="text_size_middle">15dp</dimen>
+    <dimen name="text_size_large">20dp</dimen>
+    <dimen name="grid_spacing">1dp</dimen>
+
+</resources>

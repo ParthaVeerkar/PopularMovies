@@ -1,0 +1,23 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/grid_spacing"
+    android:paddingLeft="@dimen/grid_spacing"
+    android:paddingRight="@dimen/grid_spacing"
+    android:paddingTop="@dimen/grid_spacing"
+    tools:context="com.example.android.popularmovies.MainActivityFragment"
+    tools:showIn="@layout/activity_main">
+
+    <GridView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:columnWidth="100dp"
+        android:numColumns="auto_fit"
+        android:verticalSpacing="@dimen/grid_spacing"
+        android:horizontalSpacing="@dimen/grid_spacing"
+        android:stretchMode="spacingWidth"
+        android:gravity="center"
+        android:id="@+id/moviePosterGrid" />
+
+</LinearLayout>
