@@ -6,18 +6,32 @@
     android:paddingLeft="@dimen/grid_spacing"
     android:paddingRight="@dimen/grid_spacing"
     android:paddingTop="@dimen/grid_spacing"
+    android:orientation="vertical"
     tools:context="com.example.android.popularmovies.MainActivityFragment"
+    android:background="@color/gridBackground"
     tools:showIn="@layout/activity_main">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="@string/no_movies_message"
+        android:id="@+id/noMoviesMessage"
+        android:gravity="center"
+        android:textColor="@color/noMoviesTextColor"
+        android:textSize="@dimen/text_size_middle"
+        android:visibility="invisible"/>
 
     <GridView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:columnWidth="100dp"
-        android:numColumns="auto_fit"
+        android:numColumns="3"
         android:verticalSpacing="@dimen/grid_spacing"
         android:horizontalSpacing="@dimen/grid_spacing"
-        android:stretchMode="spacingWidth"
+        android:stretchMode="columnWidth"
         android:gravity="center"
-        android:id="@+id/moviePosterGrid" />
+        android:choiceMode="singleChoice"
+        android:id="@+id/moviePosterGrid"/>
+
+
 
 </LinearLayout>

@@ -4,11 +4,13 @@
     <string-array name="pref_sort_titles" >
         <item>@string/pref_sort_titles_popularity</item>
         <item>@string/pref_sort_titles_rating</item>
+        <item>@string/pref_sort_titles_bookmarked</item>
     </string-array>
 
     <string-array name="pref_sort_values" >
         <item>@string/pref_sort_values_popularity</item>
         <item>@string/pref_sort_values_rating</item>
+        <item>@string/pref_sort_values_bookmarked</item>
     </string-array>
 
 </resources>

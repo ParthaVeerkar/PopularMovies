@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorLight">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:id="@+id/review_author"
+        android:padding="@dimen/activity_padding"
+        android:text="Author"
+        android:textColor="#000000"
+        android:background="@color/reviewTitleBackground"
+        android:paddingBottom="0dp"
+    />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:id="@+id/review_content"
+        android:padding="@dimen/activity_padding"
+        android:paddingTop="0dp"
+        android:layout_margin="0dp"
+        android:gravity="left"
+        android:text="Review Contents"
+        />
+</LinearLayout>

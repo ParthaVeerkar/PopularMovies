@@ -12,7 +12,23 @@
 
     <string name="pref_sort_titles_popularity">Most popular</string>
     <string name="pref_sort_titles_rating">Highest rated</string>
+    <string name="pref_sort_titles_bookmarked">Favorites</string>
     <string name="pref_sort_values_popularity">popularity</string>
     <string name="pref_sort_values_rating">rating</string>
+    <string name="pref_sort_values_bookmarked">favorites</string>
+
     <string name="pref_sort_values_default">rating</string>
+
+    <!-- Account type (for sync-adapter authenticator) -->
+    <!-- SyncAdapter related -->
+    <string name="sync_account_type">popularmovies.example.com</string>
+    <string name="content_authority">com.example.android.popularmovies.app</string>
+
+    <string name="is_not_bookmarked_text">Add to Favorites</string>
+    <string name="is_bookmarked_text">Remove from Favorites</string>
+
+    <string name="no_movies_message">No movies yet. Please wait while te data loads or try changing the sort order</string>
+    <string name="no_favorites_message">No favorites. Please add some favorites</string>
+    <string name="reviews_title">Reviews:</string>
+    <string name="trailers_title">Trailers:</string>
 </resources>

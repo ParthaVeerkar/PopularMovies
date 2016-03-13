@@ -1,13 +1,14 @@
 package com.example.android.popularmovies;
 
-import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
-import android.util.DisplayMetrics;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,36 +17,25 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.GridView;
-import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
+import com.example.android.popularmovies.data.MovieContract;
+import com.example.android.popularmovies.sync.PopularMoviesSyncAdapter;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    private static final String SORT_POPULAR = "popularity.desc";
-    private static final String SORT_RATING = "vote_average.desc";
+    private static final int MY_LOADER_ID = 1;
+    private static final String SELECTED_KEY = "selected_position";
 
-    private int mPosterWidth;
-    private int mPosterHeight;
-
-    private JSONArray mMovieList;
-    private CustomArrayAdapter mCustomArrayAdapter;
+    private GridView mPosterGrid;
+    private int mPosition = GridView.INVALID_POSITION;
+    private MoviesGridAdapter mMoviesGridAdapter;
+    private TextView mNoMoviesMessage;
 
     private static final String LOG_TAG = MainActivityFragment.class.getSimpleName();
 
@@ -74,43 +64,38 @@ public class MainActivityFragment extends Fragment {
     }
 
     private void updateMoviesList() {
-        // sending the sort preference to FetchMoviesTask and starting it
-        new FetchMoviesTask().execute(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_values_default)));
+        PopularMoviesSyncAdapter.syncImmediately(getActivity());
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        GridView posterGrid = (GridView) rootView.findViewById(R.id.moviePosterGrid);
+        mPosterGrid = (GridView) rootView.findViewById(R.id.moviePosterGrid);
+        mNoMoviesMessage = (TextView) rootView.findViewById(R.id.noMoviesMessage);
 
-        // getting size of the screen
-        DisplayMetrics displaymetrics = new DisplayMetrics();
-        getActivity().getWindowManager()
-                .getDefaultDisplay()
-                .getMetrics(displaymetrics);
+        mMoviesGridAdapter = new MoviesGridAdapter(getActivity(), null, 0);
 
-        // setting poster size based on standard poster size and the screen size
-        mPosterWidth = (int) (displaymetrics.widthPixels / 3) - 4;
-        mPosterHeight = (int) (mPosterWidth/0.66);
-        posterGrid.setColumnWidth(mPosterWidth);
+        mPosterGrid.setAdapter(mMoviesGridAdapter);
 
-        mCustomArrayAdapter = new CustomArrayAdapter(getActivity(),
-                R.layout.grid_poster,
-                R.id.moviePoster);
-        posterGrid.setAdapter(mCustomArrayAdapter);
-
-        posterGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mPosterGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView adapterView, View view, int position, long id) {
                 try {
-                    Intent detailIntent = new Intent(getActivity(), DetailActivity.class).putExtra(Intent.EXTRA_TEXT, mMovieList.getJSONObject(position).toString());
-                    startActivity(detailIntent);
-                } catch (JSONException e) {
+                    Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
+                    if (cursor != null) {
+                        ((Callback) getActivity()).onItemSelected(MovieContract.MoviesEntry.buildMoviesUriWithMovieId(cursor.getInt(1)));
+                    }
+                    mPosition = position;
+                } catch (Exception e) {
                     Log.e(LOG_TAG, e.getMessage());
                 }
             }
         });
+        if (savedInstanceState != null && savedInstanceState.containsKey(SELECTED_KEY)) {
+            mPosition = savedInstanceState.getInt(SELECTED_KEY);
+        }
         return rootView;
     }
 
@@ -120,124 +105,73 @@ public class MainActivityFragment extends Fragment {
         updateMoviesList();
     }
 
-    public class CustomArrayAdapter extends ArrayAdapter {
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
-        public CustomArrayAdapter(Context context, int resource, int textViewResourceId, List objects) {
-            super(context, resource, textViewResourceId, objects);
+        String sortPreference = PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_values_popularity));
+        Uri requestUri;
+        if (sortPreference.equals(getString(R.string.pref_sort_values_popularity))) {
+            requestUri = MovieContract.PopularityEntry.CONTENT_URI;
+        } else if (sortPreference.equals(getString(R.string.pref_sort_values_rating))) {
+            requestUri = MovieContract.RatingEntry.CONTENT_URI;
+        } else if (sortPreference.equals(getString(R.string.pref_sort_values_bookmarked))) {
+            requestUri = MovieContract.BookmarksEntry.CONTENT_URI;
+        } else {
+            return null;
         }
 
-        public CustomArrayAdapter(Context context, int resource) {
-            super(context, resource);
-        }
+        return new CursorLoader(getActivity(),
+                requestUri,
+                null,
+                null,
+                null,
+                null);
+    }
 
-        public CustomArrayAdapter(Context context, int resource, int textViewResourceId) {
-            super(context, resource, textViewResourceId);
-        }
-
-        public CustomArrayAdapter(Context context, int resource, Object[] objects) {
-            super(context, resource, objects);
-        }
-
-        public CustomArrayAdapter(Context context, int resource, int textViewResourceId, Object[] objects) {
-            super(context, resource, textViewResourceId, objects);
-        }
-
-        public CustomArrayAdapter(Context context, int resource, List objects) {
-            super(context, resource, objects);
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.grid_poster, parent, false);
-                convertView.getLayoutParams().height = mPosterHeight;
-                convertView.getLayoutParams().width = mPosterWidth;
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        String sortPref = PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_values_popularity));
+        if(data.getCount() < 1) {
+            if(sortPref.equals(getString(R.string.pref_sort_values_bookmarked))) {
+                mNoMoviesMessage.setText(R.string.no_favorites_message);
+            } else {
+                mNoMoviesMessage.setText(R.string.no_movies_message);
             }
-            String url = (String) getItem(position);
-            Picasso.with(getContext()).load(url)
-                    .into((ImageView) convertView);
-            return convertView;
+            mNoMoviesMessage.setVisibility(View.VISIBLE);
+        } else {
+            mNoMoviesMessage.setVisibility(View.GONE);
+        }
+        mMoviesGridAdapter.swapCursor(data);
+        if (mPosition != ListView.INVALID_POSITION) {
+            mPosterGrid.smoothScrollToPosition(mPosition);
         }
     }
 
-    public class FetchMoviesTask extends AsyncTask<String, Void, JSONArray> {
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mMoviesGridAdapter.swapCursor(null);
+    }
 
-        private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
-        private String moviesInformation;
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(MY_LOADER_ID, null, this);
+        super.onActivityCreated(savedInstanceState);
+    }
 
-        // INSERT API KEY HERE
-        private static final String API_KEY = "";  // API KEY
-        private static final String API_URL = "http://api.themoviedb.org/3/discover/movie";
-        private static final String IMAGE_URL = "http://image.tmdb.org/t/p/w185";
+    public void onSortingChanged() {
+       updateMoviesList();
+       getLoaderManager().restartLoader(MY_LOADER_ID, null, this);
+    }
 
-        protected JSONArray doInBackground(String... params) {
+    public interface Callback {
+        public void onItemSelected(Uri dataUri);
+    }
 
-            String sortOrder = SORT_POPULAR;
-
-            if(params[0].equals(getString(R.string.pref_sort_values_rating))) {
-                sortOrder = SORT_RATING;
-            }
-
-            Uri uri = Uri.parse(API_URL).buildUpon()
-                    .appendQueryParameter("sort_by", sortOrder)
-                    .appendQueryParameter("api_key", API_KEY).build();
-
-            HttpURLConnection urlConnection;
-            BufferedReader reader;
-            try {
-                URL url = new URL(uri.toString());
-
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line);
-                }
-                if (buffer.length() == 0) {
-                    return null;
-                }
-
-                moviesInformation = buffer.toString();
-                return getMoviesList(moviesInformation);
-            } catch (Exception e) {
-                Log.d(LOG_TAG, e.getMessage());
-            }
-            return null;
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (mPosition != ListView.INVALID_POSITION) {
+            outState.putInt(SELECTED_KEY, mPosition);
         }
-
-        private JSONArray getMoviesList(String moviesInformation) {
-            try {
-                JSONObject moviesInformationList = new JSONObject(moviesInformation);
-                return moviesInformationList.getJSONArray("results");
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage());
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(JSONArray results) {
-
-            if (results == null) {
-                return;
-            }
-            mMovieList = results;
-            mCustomArrayAdapter.clear();
-            try {
-                for (int i = 0; i < results.length(); i++) {
-                    mCustomArrayAdapter.add(IMAGE_URL + results.getJSONObject(i).get("poster_path"));
-                }
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage());
-            }
-        }
+        super.onSaveInstanceState(outState);
     }
 }
