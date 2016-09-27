@@ -38,20 +38,16 @@ import java.util.Vector;
  */
 public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
 
-    private static final String SORT_POPULAR = "popularity.desc";
-    private static final String SORT_RATING = "vote_average.desc";
     private static final String MANUAL_SYNC = "immediate_sync";
 
     private static final String LOG_TAG = PopularMoviesSyncAdapter.class.getSimpleName();
 
-    private static final String API_URL = "http://api.themoviedb.org/3/discover/movie";
+    private static final String API_URL_POPULAR = "http://api.themoviedb.org/3/movie/popular";
+    private static final String API_URL_HIGH_RATED = "http://api.themoviedb.org/3/movie/top_rated";
     private static final String ADDITIONAL_DATA_PARAMETER = "append_to_response";
     private static final String ADDITIONAL_DATA_VALUE = "videos,reviews";
     private static final String MOVIE_API_URL = "http://api.themoviedb.org/3/movie";
     private static final String YOUTUBE_URL_PREFIX = "http://www.youtube.com/watch?v=";
-    private static final String VOTE_COUNT_GREATER_THAN = "vote_count.gte";
-    private static final String VOTE_COUNT_LIMIT = "1000";
-
     // sync intervals
     public static final int SYNC_INTERVAL = 60 * 180;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL/3;
@@ -98,10 +94,6 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
             return;
         }
         Uri requestUri = MovieContract.MoviesEntry.CONTENT_URI;
-        int deletedRows = getContext().getContentResolver().delete(requestUri,
-                MovieContract.MoviesEntry.COLUMN_ID + " != ? ",
-                mInsertedMovies.toArray(new String[mInsertedMovies.size()])
-                );
     }
 
     private void updateBookmarks() {
@@ -177,18 +169,27 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     private void updateDatabase(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult, String sortOption) {
-        Uri.Builder uriBuilder = Uri.parse(API_URL).buildUpon()
-                .appendQueryParameter("api_key", BuildConfig.API_KEY);
 
+        Uri.Builder uriBuilder;
+        Uri rankingUri;
+        if(sortOption.equals(getContext().getString(R.string.pref_sort_values_rating))) {
+            uriBuilder = Uri.parse(API_URL_HIGH_RATED).buildUpon();
+            rankingUri = MovieContract.RatingEntry.CONTENT_URI;
+        } else {
+            uriBuilder = Uri.parse(API_URL_POPULAR).buildUpon();
+            rankingUri= MovieContract.PopularityEntry.CONTENT_URI;
+        }
+        Uri uri = uriBuilder.appendQueryParameter("api_key", BuildConfig.API_KEY).build();
+/*
         String sortOrder = SORT_POPULAR;
-        Uri rankingUri = MovieContract.PopularityEntry.CONTENT_URI;
+         = MovieContract.PopularityEntry.CONTENT_URI;
 
         if(sortOption.equals(getContext().getString(R.string.pref_sort_values_rating))) {
             sortOrder = SORT_RATING;
             uriBuilder.appendQueryParameter(VOTE_COUNT_GREATER_THAN, VOTE_COUNT_LIMIT);
-            rankingUri = MovieContract.RatingEntry.CONTENT_URI;
+
         }
-        Uri uri = uriBuilder.appendQueryParameter("sort_by", sortOrder).build();
+        */
 
         HttpURLConnection urlConnection;
         BufferedReader reader;
@@ -335,10 +336,6 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         if ( cVVectorReviews.size() > 0) {
             ContentValues[] values = new ContentValues[cVVectorReviews.size()];
             cVVectorReviews.toArray(values);
-            int results = getContext().getContentResolver().bulkInsert(
-                    MovieContract.VideosEntry.CONTENT_URI,
-                    values
-            );
         }
     }
 
@@ -370,10 +367,6 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         if ( cVVectorReviews.size() > 0) {
             ContentValues[] values = new ContentValues[cVVectorReviews.size()];
             cVVectorReviews.toArray(values);
-            int results = getContext().getContentResolver().bulkInsert(
-                    MovieContract.ReviewsEntry.CONTENT_URI,
-                    values
-            );
         }
     }
 
