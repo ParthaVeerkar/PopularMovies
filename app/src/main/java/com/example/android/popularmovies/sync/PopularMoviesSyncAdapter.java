@@ -274,6 +274,10 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
 
     private void updateAdditionalInformation(String movieId) {
 
+        /*
+         Using http://api.themoviedb.org/3/movie/{id}/?append_to_response=videos,reviews
+         so that we don't need to send 2 different request to get videos and reviews
+          */
         Uri uri = Uri.parse(MOVIE_API_URL).buildUpon()
                 .appendPath(movieId)
                 .appendQueryParameter("api_key", BuildConfig.API_KEY)
@@ -284,6 +288,7 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         BufferedReader reader;
         try {
             URL url = new URL(uri.toString());
+            Log.d(LOG_TAG, uri.toString());
 
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
@@ -336,6 +341,11 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         if ( cVVectorReviews.size() > 0) {
             ContentValues[] values = new ContentValues[cVVectorReviews.size()];
             cVVectorReviews.toArray(values);
+
+            int results = getContext().getContentResolver().bulkInsert(
+                                MovieContract.VideosEntry.CONTENT_URI,
+                                values
+                        );
         }
     }
 
@@ -367,6 +377,10 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         if ( cVVectorReviews.size() > 0) {
             ContentValues[] values = new ContentValues[cVVectorReviews.size()];
             cVVectorReviews.toArray(values);
+            int results = getContext().getContentResolver().bulkInsert(
+                MovieContract.ReviewsEntry.CONTENT_URI,
+                    values
+                    );
         }
     }
 
